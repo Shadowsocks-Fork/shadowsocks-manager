@@ -1,38 +1,25 @@
-const ONLINE_CACHE_NAME = '2018-03-15 09:38:15 <%= serviceWorkerTime%>';
+const ONLINE_CACHE_NAME = '2018-06-06 12:45:26 <%= serviceWorkerTime%>';
 const isSWOpen = JSON.parse('<%= serviceWorker%>');
 
 const emptyCacheUrl = [];
 const onlineCacheUrl = [
   '/',
 
-  '/libs/angular-animate.min.js',
-  '/libs/angular-aria.min.js',
-  '/libs/angular-chart.min.js',
-  '/libs/angular-inview.js',
-  '/libs/angular-marked.min.js',
-  '/libs/angular-material.min.css',
-  '/libs/angular-material.min.js',
-  '/libs/angular-messages.min.js',
-  '/libs/angular-moment.min.js',
-  '/libs/angular-qr.min.js',
-  '/libs/angular-sanitize.min.js',
-  '/libs/angular-translate.min.js',
-  '/libs/angular-ui-router.min.js',
-  '/libs/angular-websocket.min.js',
-  '/libs/angular.min.js',
-  '/libs/bundle.js',
-  '/libs/Chart.min.js',
   '/favicon.png',
-  '/libs/marked.min.js',
+  '/libs/angular-material.min.css',
+  '/libs/bundle.js',
+  '/libs/lib.js',
   '/libs/MaterialIcons-Regular.eot',
   '/libs/MaterialIcons-Regular.ttf',
   '/libs/MaterialIcons-Regular.woff',
   '/libs/MaterialIcons-Regular.woff2',
-  '/libs/moment.min.js',
-  '/libs/ngStorage.min.js',
-  '/libs/qrcode.min.js',
+
   '/libs/style.css',
   
+  '/public/views/skin/bing.html',
+  '/public/views/skin/default.html',
+  '/public/views/skin/fs_bing.html',
+
   '/public/views/home/home.html',
   '/public/views/home/index.html',
   '/public/views/home/login.html',
@@ -45,6 +32,7 @@ const onlineCacheUrl = [
   '/public/views/user/changePassword.html',
   '/public/views/user/index.html',
   '/public/views/user/qrcodeDialog.html',
+  '/public/views/user/ref.html',
   '/public/views/user/settings.html',
   '/public/views/user/telegram.html',
   '/public/views/user/user.html',
@@ -79,6 +67,9 @@ const onlineCacheUrl = [
   '/public/views/admin/pickAccount.html',
   '/public/views/admin/pickTime.html',
   '/public/views/admin/previewNotice.html',
+  '/public/views/admin/refCodeList.html',
+  '/public/views/admin/refSetting.html',
+  '/public/views/admin/refUserList.html',
   '/public/views/admin/server.html',
   '/public/views/admin/serverPage.html',
   '/public/views/admin/settings.html',
@@ -91,6 +82,7 @@ const onlineCacheUrl = [
   '/public/views/dialog/addAccount.html',
   '/public/views/dialog/addGiftCardBatch.html',
   '/public/views/dialog/alert.html',
+  '/public/views/dialog/ban.html',
   '/public/views/dialog/changePassword.html',
   '/public/views/dialog/confirm.html',
   '/public/views/dialog/email.html',
@@ -166,8 +158,8 @@ self.addEventListener('push', function (event) {
   // if (!(self.Notification && self.notification.permission === 'granted')) {
   //   return;
   // }
-  var data = event.data.json();
-  var title = data.title;
+  const data = event.data.json();
+  const title = data.title;
   event.waitUntil(
     self.registration.showNotification(title, {
       body: data.options.body,

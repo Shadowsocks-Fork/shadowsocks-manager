@@ -2,9 +2,9 @@ const app = angular.module('app');
 const window = require('window');
 const cdn = window.cdn || '';
 
-app.factory('payDialog' , [ '$mdDialog', '$interval', '$timeout', '$http', '$localStorage', ($mdDialog, $interval, $timeout, $http, $localStorage) => {
+app.factory('payDialog' , [ '$mdDialog', '$interval', '$timeout', '$http', '$localStorage', 'configManager', ($mdDialog, $interval, $timeout, $http, $localStorage, configManager) => {
   const publicInfo = {
-    config: JSON.parse(window.ssmgrConfig),
+    config: configManager.getConfig(),
     time: [{
       type: 'hour', name: '一小时'
     }, {
@@ -54,7 +54,7 @@ app.factory('payDialog' , [ '$mdDialog', '$interval', '$timeout', '$http', '$loc
     } else {
       publicInfo.status = 'pay';
     }
-    const env = JSON.parse(window.ssmgrConfig).paypalMode === 'sandbox' ? 'sandbox' : 'production';
+    const env = publicInfo.config.paypalMode === 'sandbox' ? 'sandbox' : 'production';
     if(publicInfo.paypal[publicInfo.orderType] && publicInfo.myPayType === 'paypal') {
       paypal.Button.render({
         locale: $localStorage.language ? $localStorage.language.replace('-', '_') : 'zh_CN',
@@ -103,7 +103,7 @@ app.factory('payDialog' , [ '$mdDialog', '$interval', '$timeout', '$http', '$loc
     escapeToClose: false,
     locals: { bind: publicInfo },
     bindToController: true,
-    fullscreen: true,
+    fullscreen: false,
     controller: ['$scope', '$mdDialog', '$mdMedia', 'bind', function($scope, $mdDialog, $mdMedia, bind) {
       $scope.publicInfo = bind;
       $scope.setDialogWidth = () => {
@@ -173,6 +173,7 @@ app.factory('payDialog' , [ '$mdDialog', '$interval', '$timeout', '$http', '$loc
       if (data.success) {
         publicInfo.status = 'success';
         publicInfo.message = `充值码[ ${ publicInfo.giftCardPassword } ]使用成功`;
+        publicInfo.giftCardPassword = '';
       } else {
         publicInfo.status = 'error';
         publicInfo.message = data.message;

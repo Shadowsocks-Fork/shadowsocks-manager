@@ -435,9 +435,7 @@ const getTopFlow = groupId => {
   const startTime = moment().hour(0).minute(0).second(0).millisecond(0).toDate().getTime();
   const endTime = Date.now();
   const where = {};
-  if(groupId >= 0) {
-    where['user.group'] = groupId;
-  }
+  if(groupId >= 0) { where['user.group'] = groupId; }
   return knex('saveFlow').sum('saveFlow.flow as sumFlow')
   .groupBy('user.id')
   .orderBy('sumFlow', 'desc')
@@ -446,11 +444,20 @@ const getTopFlow = groupId => {
     'user.id as userId',
     'user.username as email',
     'account_plugin.port as port',
+    'account_plugin.id as accountId',
   ])
   .leftJoin('account_plugin', 'account_plugin.id', 'saveFlow.accountId')
-  .leftJoin('user', 'account_plugin.userId', 'user.id')
+  .innerJoin('user', 'account_plugin.userId', 'user.id')
   .whereBetween('saveFlow.time', [startTime, endTime]).where(where);
-  ;
+};
+
+const cleanAccountFlow = async id => {
+  const account = await knex('account_plugin').where({ id }).then(s => s[0]);
+  if(!account) { return Promise.reject('account id not found'); }
+  await knex('saveFlow').update({ accountId: 0 }).where({ accountId: id });
+  await knex('saveFlow5min').update({ accountId: 0 }).where({ accountId: id });
+  await knex('saveFlowHour').update({ accountId: 0 }).where({ accountId: id });
+  await knex('saveFlowDay').update({ accountId: 0 }).where({ accountId: id });
 };
 
 exports.getFlow = getFlow;
@@ -463,3 +470,4 @@ exports.getAccountServerFlow = getAccountServerFlow;
 exports.getUserPortLastConnect = getUserPortLastConnect;
 
 exports.getFlowFromSplitTime = getFlowFromSplitTime;
+exports.cleanAccountFlow = cleanAccountFlow;

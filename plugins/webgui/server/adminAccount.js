@@ -1,4 +1,5 @@
 const macAccount = appRequire('plugins/macAccount/index');
+const account = appRequire('plugins/account/index');
 
 const formatMacAddress = mac => {
   return mac.replace(/-/g, '').replace(/:/g, '').toLowerCase();
@@ -54,7 +55,55 @@ exports.deleteMacAccount = (req, res) => {
 exports.getMacAccountForUser = (req, res) => {
   const mac = req.params.macAddress;
   const ip = req.headers['x-real-ip'] || req.connection.remoteAddress;
-  macAccount.getAccountForUser(mac.toLowerCase(), ip).then(success => {
+  const noPassword = !!(+req.query.noPassword);
+  const noFlow = !!(+req.query.noFlow);
+  macAccount.getAccountForUser(mac.toLowerCase(), ip, {
+    noPassword,
+    noFlow,
+  }).then(success => {
+    res.send(success);
+  }).catch(err => {
+    console.log(err);
+    res.status(403).end();
+  });
+};
+
+exports.getNoticeForUser = (req, res) => {
+  const mac = req.params.macAddress;
+  const ip = req.headers['x-real-ip'] || req.connection.remoteAddress;
+  macAccount
+  .getNoticeForUser(mac.toLowerCase(), ip)
+  .then(success => {
+    res.send(success);
+  }).catch(err => {
+    console.log(err);
+    res.status(403).end();
+  });
+};
+
+exports.banAccount = (req, res) => {
+  const serverId = +req.params.serverId;
+  const accountId = +req.params.accountId;
+  const time = +req.body.time;
+  account.banAccount({
+    serverId,
+    accountId,
+    time,
+  }).then(success => {
+    res.send('success');
+  }).catch(err => {
+    console.log(err);
+    res.status(403).end();
+  });
+};
+
+exports.getBanAccount = (req, res) => {
+  const serverId = +req.params.serverId;
+  const accountId = +req.params.accountId;
+  account.getBanAccount({
+    serverId,
+    accountId,
+  }).then(success => {
     res.send(success);
   }).catch(err => {
     console.log(err);

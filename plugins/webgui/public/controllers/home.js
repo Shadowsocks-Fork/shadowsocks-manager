@@ -1,17 +1,22 @@
 const app = angular.module('app');
 
 app
-  .controller('HomeController', ['$scope', '$mdMedia', '$mdSidenav', '$state', '$http', '$timeout', '$localStorage',
-    ($scope, $mdMedia, $mdSidenav, $state, $http, $timeout, $localStorage) => {
-      if ($localStorage.home.status === 'normal') {
+  .controller('HomeController', ['$scope', '$mdMedia', '$mdSidenav', '$state', '$http', '$timeout', '$localStorage', 'configManager',
+    ($scope, $mdMedia, $mdSidenav, $state, $http, $timeout, $localStorage, configManager) => {    
+      const config = configManager.getConfig();
+      console.log(config);
+      if(config.status === 'normal') {
         $state.go('user.index');
-      } else if ($localStorage.home.status === 'admin') {
+      } else if (config.status === 'admin') {
         $state.go('admin.index');
       } else {
         $localStorage.admin = {};
         $localStorage.user = {};
         $scope.setMainLoading(false);
       }
+      $scope.setConfig(config);
+      $scope.home = {};
+
       $scope.innerSideNav = true;
       $scope.menuButton = function() {
         if ($mdMedia('gt-sm')) {
@@ -41,36 +46,24 @@ app
   ])
   .controller('HomeIndexController', ['$scope', '$state',
     ($scope, $state) => {
-      $scope.icons = [{
-        icon: 'flash_on',
-        title: '快速搭建',
-        content: '仅依赖Node.js，无需安装数据库（可选MySQL）',
-      }, {
-        icon: 'build',
-        title: '易于配置',
-        content: '带有插件系统，仅需修改配置文件即可运行',
-      }, {
-        icon: 'vpn_key',
-        title: '官方标准',
-        content: '支持libev和python版本的标准manager API',
-      }];
       $scope.login = () => { $state.go('home.login'); };
       $scope.signup = () => { $state.go('home.signup'); };
     }
   ])
-  .controller('HomeLoginController', ['$scope', '$state', 'homeApi', 'alertDialog', '$localStorage',
-    ($scope, $state, homeApi, alertDialog, $localStorage) => {
+  .controller('HomeLoginController', ['$scope', '$state', 'homeApi', 'alertDialog', '$localStorage', 'configManager',
+    ($scope, $state, homeApi, alertDialog, $localStorage, configManager) => {
       $scope.user = {};
       $scope.login = () => {
         alertDialog.loading().then(() => {
           return homeApi.userLogin($scope.user.email, $scope.user.password);
         }).then(success => {
           $scope.setId(success.id);
-          $localStorage.home.status = success.type;
+          // $localStorage.home.status = success.type;
           return alertDialog.close().then(() => {
             return success;
           });
         }).then(success => {
+          configManager.deleteConfig();
           if (success.type === 'normal') {
             $state.go('user.index');
           } else if (success.type === 'admin') {
@@ -97,13 +90,13 @@ app
       };
     }
   ])
-  .controller('HomeSignupController', ['$scope', '$state', '$interval', '$timeout', 'homeApi', 'alertDialog', '$localStorage',
-    ($scope, $state, $interval, $timeout, homeApi, alertDialog, $localStorage) => {
+  .controller('HomeSignupController', ['$scope', '$state', '$interval', '$timeout', 'homeApi', 'alertDialog', '$localStorage', 'configManager',
+    ($scope, $state, $interval, $timeout, homeApi, alertDialog, $localStorage, configManager) => {
       $scope.user = {};
       $scope.sendCodeTime = 0;
       $scope.sendCode = () => {
         alertDialog.loading().then(() => {
-          return homeApi.sendCode($scope.user.email);
+          return homeApi.sendCode($scope.user.email, $scope.home.refId);
         })
         .then(success => {
           alertDialog.show('验证码已发至邮箱', '确定');
@@ -122,11 +115,11 @@ app
       };
       $scope.signup = () => {
         alertDialog.loading().then(() => {
-          return homeApi.userSignup($scope.user.email, $scope.user.code, $scope.user.password);
+          return homeApi.userSignup($scope.user.email, $scope.user.code, $scope.user.password, $scope.home.refId);
         })
         .then(userType => {
-          $localStorage.home.status = userType;
           alertDialog.show('用户注册成功', '确定').then(success => {
+            configManager.deleteConfig();
             if(userType === 'admin') {
               $state.go('admin.index');
             } else {
@@ -171,14 +164,14 @@ app
       };
     }
   ])
-  .controller('HomeMacLoginController', ['$scope', '$http', '$state', '$stateParams', '$localStorage',
-    ($scope, $http, $state, $stateParams, $localStorage) => {
+  .controller('HomeMacLoginController', ['$scope', '$http', '$state', '$stateParams', '$localStorage', 'configManager',
+    ($scope, $http, $state, $stateParams, $localStorage, configManager) => {
       const mac = $stateParams.mac;
+      configManager.deleteConfig();
       $http.post('/api/home/macLogin', {
         mac,
       }).then(() => {
         $localStorage.user = {};
-        $localStorage.home.status = 'normal';
         $state.go('user.index');
       }).catch(() => {
         $localStorage.home = {};
@@ -187,19 +180,30 @@ app
       });
     }
   ])
-  .controller('HomeTelegramLoginController', ['$scope', '$http', '$state', '$stateParams', '$localStorage',
-    ($scope, $http, $state, $stateParams, $localStorage) => {
+  .controller('HomeTelegramLoginController', ['$scope', '$http', '$state', '$stateParams', '$localStorage', 'configManager',
+    ($scope, $http, $state, $stateParams, $localStorage, configManager) => {
       const token = $stateParams.token;
+      configManager.deleteConfig();
       $http.post('/api/user/telegram/login', {
         token,
       }).then(() => {
         $localStorage.user = {};
-        $localStorage.home.status = 'normal';
         $state.go('user.index');
       }).catch(() => {
         $localStorage.home = {};
         $localStorage.user = {};
         $state.go('home.index');
+      });
+    }
+  ])
+  .controller('HomeRefController', ['$scope', '$state', '$stateParams', '$http',
+    ($scope, $state, $stateParams, $http) => {
+      const refId = $stateParams.refId;
+      $scope.home.refId = refId;
+      $scope.home.refIdValid = false;
+      $http.post(`/api/home/ref/${ refId }`).then(success => {
+        $scope.home.refIdValid = success.data.valid;
+        $state.go('home.signup');
       });
     }
   ])

@@ -52,6 +52,9 @@ const addUser = async (options) => {
     if(options.group) {
       Object.assign(insert, { group: options.group });
     }
+    if(options.telegramId) {
+      Object.assign(insert, { telegram: options.telegramId });
+    }
     return knex('user').insert(insert);
   } catch(err) {
     console.log(err);
@@ -166,7 +169,7 @@ const getUserAndPaging = async (opt = {}) => {
   const page = opt.page || 1;
   const pageSize = opt.pageSize || 20;
   const type = opt.type || ['normal'];
-  const group = opt.group || -1;
+  const group = opt.hasOwnProperty('group') ? opt.group : -1;
 
   let count = knex('user').select()
   .where('id', '>', 1)

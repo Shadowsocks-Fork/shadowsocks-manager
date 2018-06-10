@@ -150,7 +150,7 @@ exports.changeAccountData = (req, res) => {
   const accountId = req.params.accountId;
   account.editAccount(accountId, {
     type: req.body.type,
-    port: +req.body.port,
+    port: req.body.port,
     password: req.body.password,
     time: req.body.time,
     limit: +req.body.limit,
@@ -159,6 +159,21 @@ exports.changeAccountData = (req, res) => {
     multiServerFlow: +req.body.multiServerFlow,
     server: req.body.server,
   }).then(success => {
+    if(req.body.cleanFlow) {
+      flow.cleanAccountFlow(accountId);
+    }
+    res.send('success');
+  }).catch(err => {
+    console.log(err);
+    res.status(403).end();
+  });
+};
+
+exports.changeAccountTime = (req, res) => {
+  const accountId = req.params.accountId;
+  const time = req.body.time;
+  const check = req.body.check;
+  account.editAccountTime(accountId, time, check).then(success => {
     res.send('success');
   }).catch(err => {
     console.log(err);
@@ -550,6 +565,16 @@ exports.getAllMacAccount = (req, res) => {
   const group = req.adminInfo.id === 1 ? -1 : req.adminInfo.group;
   macAccount.getAllAccount(group).then(success => {
     return res.send(success);
+  }).catch(err => {
+    console.log(err);
+    res.status(403).end();
+  });
+};
+
+exports.resetAccountFlow = (req, res) => {
+  const accountId = +req.params.accountId;
+  flow.cleanAccountFlow(accountId).then(success => {
+    return res.send('success');
   }).catch(err => {
     console.log(err);
     res.status(403).end();

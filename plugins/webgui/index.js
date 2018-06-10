@@ -67,8 +67,13 @@ app.listen(port, host, () => {
 //   }
 // });
 
+app.use((err, req, res, next) => {
+  return res.render('error');
+});
+
 exports.app = app;
 // exports.wss = wss;
 // exports.sessionParser = sessionParser;
+exports.dependence = ['webgui_ref', 'group', 'macAccount'];
 
 appRequire('plugins/webgui/server/route');

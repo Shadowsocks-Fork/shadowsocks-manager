@@ -1,12 +1,19 @@
 const app = angular.module('app');
 
-app.controller('AdminController', ['$scope', '$mdMedia', '$mdSidenav', '$state', '$http', '$document', '$interval', '$timeout', '$localStorage',
-  ($scope, $mdMedia, $mdSidenav, $state, $http, $document, $interval, $timeout, $localStorage) => {
-    if ($localStorage.home.status !== 'admin') {
+app.controller('AdminController', ['$scope', '$mdMedia', '$mdSidenav', '$state', '$http', '$document', '$interval', '$timeout', '$localStorage', 'configManager',
+  ($scope, $mdMedia, $mdSidenav, $state, $http, $document, $interval, $timeout, $localStorage, configManager) => {
+    const config = configManager.getConfig();
+    console.log(config);
+    if(config.status === 'normal') {
+      $state.go('user.index');
+    } else if(!config.status) {
       $state.go('home.index');
     } else {
       $scope.setMainLoading(false);
     }
+    $scope.setConfig(config);
+    $scope.setId(config.id);
+
     $scope.innerSideNav = true;
     $scope.sideNavWidth = () => {
       if($scope.innerSideNav) {
@@ -53,6 +60,7 @@ app.controller('AdminController', ['$scope', '$mdMedia', '$mdSidenav', '$state',
         $http.post('/api/home/logout').then(() => {
           $localStorage.home = {};
           $localStorage.admin = {};
+          configManager.deleteConfig();
           $state.go('home.index');
         });
       },
@@ -78,8 +86,10 @@ app.controller('AdminController', ['$scope', '$mdMedia', '$mdSidenav', '$state',
     $scope.title = '';
     $scope.setTitle = str => { $scope.title = str; };
     $scope.fabButton = false;
+    $scope.fabButtonIcon = '';
     $scope.fabButtonClick = () => {};
-    $scope.setFabButton = fn => {
+    $scope.setFabButton = (fn, icon = '') => {
+      $scope.fabButtonIcon = icon;
       if(!fn) {
         $scope.fabButton = false;
         $scope.fabButtonClick = () => {};
@@ -145,6 +155,7 @@ app.controller('AdminController', ['$scope', '$mdMedia', '$mdSidenav', '$state',
     };
     $scope.$on('$stateChangeStart', function(event, toUrl, fromUrl) {
       $scope.fabButton = false;
+      $scope.fabButtonIcon = '';
       $scope.title = '';
       $scope.menuButtonIcon = '';
       $scope.menuRightButtonIcon = '';
@@ -208,7 +219,11 @@ app.controller('AdminController', ['$scope', '$mdMedia', '$mdSidenav', '$state',
       orderDialog.show(order);
     };
     $scope.toTopUser = top => {
-      $state.go('admin.userPage', { userId: top.userId });
+      if(top.email) {
+        $state.go('admin.userPage', { userId: top.userId });
+      } else {
+        $state.go('admin.accountPage', { accountId: top.accountId });
+      }
     };
   }
 ])

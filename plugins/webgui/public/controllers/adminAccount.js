@@ -127,8 +127,8 @@ app.controller('AdminAccountController', ['$scope', '$state', '$stateParams', '$
     };
   }
 ])
-.controller('AdminAccountPageController', ['$scope', '$state', '$stateParams', '$http', '$mdMedia', '$q', 'adminApi', '$timeout', '$interval', 'qrcodeDialog', 'ipDialog',
-  ($scope, $state, $stateParams, $http, $mdMedia, $q, adminApi, $timeout, $interval, qrcodeDialog, ipDialog) => {
+.controller('AdminAccountPageController', ['$scope', '$state', '$stateParams', '$http', '$mdMedia', '$q', 'adminApi', '$timeout', '$interval', 'qrcodeDialog', 'ipDialog', '$mdBottomSheet',
+  ($scope, $state, $stateParams, $http, $mdMedia, $q, adminApi, $timeout, $interval, qrcodeDialog, ipDialog, $mdBottomSheet) => {
     $scope.setTitle('账号');
     $scope.setMenuButton('arrow_back', 'admin.account');
     $scope.accountId = +$stateParams.accountId;
@@ -141,7 +141,9 @@ app.controller('AdminAccountController', ['$scope', '$state', '$stateParams', '$
       $scope.account = success[0].data;
       $scope.servers = success[1].data.map(server => {
         if(server.host.indexOf(':') >= 0) {
-          server.host = server.host.split(':')[1];
+          const hosts = server.host.split(':');
+          const number = Math.ceil(Math.random() * (hosts.length - 1));
+          server.host = hosts[number];
         }
         return server;
       });
@@ -173,6 +175,11 @@ app.controller('AdminAccountController', ['$scope', '$state', '$stateParams', '$
           adminApi.getServerPortData(serverId, accountId);
         }, index * 1000);
       });
+
+      $scope.server = $scope.servers.filter(f => {
+        return f.id === serverId;
+      })[0];
+      
     };
     $scope.setInterval($interval(() => {
       const serverId = currentServerId;
@@ -367,6 +374,30 @@ app.controller('AdminAccountController', ['$scope', '$state', '$stateParams', '$
         background: `linear-gradient(90deg, rgba(0,0,0,0.12) ${ percent }%, rgba(0,0,0,0) 0%)`
       };
     };
+    $scope.setFabButton($scope.id === 1 ? () => {
+      $scope.editAccount($scope.account.id);
+    } : null, 'mode_edit');
+    $scope.setExpireTime = number => {
+      $scope.expireTimeShift += number;
+    };
+    $scope.expireTimeSheet = time => {
+      if(!time) { return; }
+      $scope.expireTimeShift = 0;
+      $mdBottomSheet.show({
+        templateUrl: '/public/views/admin/setExpireTime.html',
+        preserveScope: true,
+        scope: $scope,
+      }).catch(() => {
+        $http.put(`/api/admin/account/${ $scope.accountId }/time`, {
+          time: $scope.expireTimeShift,
+          check: true,
+        }).then(success => {
+          $http.get(`/api/admin/account/${ $scope.accountId }`).then(success => {
+            $scope.account = success.data;
+          });
+        });
+      });
+    };
   }
 ])
 .controller('AdminAddAccountController', ['$scope', '$state', '$stateParams', '$http', '$mdBottomSheet', 'alertDialog',
@@ -480,6 +511,7 @@ app.controller('AdminAccountController', ['$scope', '$state', '$stateParams', '$
       $scope.account.type = success.data.type;
       $scope.account.port = success.data.port;
       $scope.account.password = success.data.password;
+      $scope.account.cleanFlow = false;
       $scope.account.autoRemove = success.data.autoRemove;
       $scope.account.multiServerFlow = success.data.multiServerFlow;
       if(success.data.type >= 2 && success.data.type <= 5) {
@@ -519,6 +551,7 @@ app.controller('AdminAccountController', ['$scope', '$state', '$stateParams', '$
         time: $scope.account.time,
         limit: +$scope.account.limit,
         flow: +$scope.account.flow * 1000 * 1000,
+        cleanFlow: $scope.account.cleanFlow,
         autoRemove: $scope.account.autoRemove ? 1 : 0,
         multiServerFlow: $scope.account.multiServerFlow ? 1 : 0,
         server: $scope.accountServer ? server : null,
